@@ -6,10 +6,14 @@
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Ubuntu" />
+
     <link rel='stylesheer' href='styles.css'>
     <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
-        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <!-- <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous"-->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.2.2/theme/dark.min.js" integrity="sha512-AWm1gUw5vg8G8eVtZGXLySa9WpCDfZFut0YzGxhcjqYUXwKbM1rzJVzkDt9JXlOOO2ECKEmw1WOIJpRXJu9LiQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@4.5.2/dist/darkly/bootstrap.min.css" integrity="sha384-nNK9n28pDUDDgIiIqZ/MiyO3F4/9vsMtReZK39klb/MtkZI3/LtjSjlmyVPS3KdN" crossorigin="anonymous">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.2.2/echarts.min.js"
         integrity="sha512-ivdGNkeO+FTZH5ZoVC4gS4ovGSiWc+6v60/hvHkccaMN2BXchfKdvEZtviy5L4xSpF8NPsfS0EVNSGf+EsUdxA=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -19,7 +23,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.2.2/i18n/langES-obj.min.js"
         integrity="sha512-uCX5095ZMlfHnnymRsknBVuWmNHX32hSuzcGRYpIoYvXTlTa11A+e1D3K6U+mXTNSP9plMWV5NtTSHBpXGtHJA=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.0/css/all.css" integrity="sha384-lZN37f5QGtY3VHgisS14W3ExzMWZxybE1SJSEsQp9S+oqd12jhcu+A56Ebc1zFSJ" crossorigin="anonymous">
 
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
@@ -36,46 +40,23 @@
 </head>
 
 <body>
-    <!--
-    <div id='fileupload' class='panel panel-body col-md-12'>
-        <input type="file" id='logfile' onchange=openFile(event)>
-    </div>
-    <div id='container' class='col-md-12'>
-        <div id='devices' class='panel panel-body col-md-12'>
-            <div class='col-md-6 float-left'>
-                <table id='antDevices' class='table-bordered table-striped table'>
-                    <thead>
-                        <tr>
-                            <th>Dispositivos ANT+</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-
-                    </tbody>
-                </table>
-            </div>
-            <div class='col-md-6 float-right'>
-                <table id='antDevices' class='table-bordered table-striped table'>
-                    <thead>
-                        <tr>
-                            <th>Dispositivos ANT+</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>-->
+    
     <div class="card col-md-12">
-        <div class="card-header">Zwift Log Analyzer</div>
+        <div class="card-header"><h3><span class='fas fa-clipboard-check'> .:Zwift Log Analyzer :.</span></h3></div>
         <div class="card-body">
             <input type="file" id='logfile' onchange=openFile(event)>
         </div>
+        <div class= 'card col-md-12' id='resumen' hidden>
+            <div class='card-header'><h5><span class='fas fa-info-circle'> Resumen de actividad</span></h5></div>
+            <div class='card-body'>
+
+            </div>
+        </div>
+        <div class='card col-md-12' id='peripherals' hidden>
+            <div class='card-header'><h5><span class='fas fa-th'> Dispositivos</span></h5></div>
         <div class='card-body'>
             <table id='antDevices' class='table-bordered table-striped table col-md-6 float-left'>
-                <thead>
+                <thead class='thead-light'>
                     <tr>
                         <th>Dispositivos ANT+</th>
                     </tr>
@@ -84,7 +65,7 @@
                 </tbody>
             </table>
             <table id='bleDevices' class='table-bordered table-striped table col-md-6 float-left'>
-                <thead>
+                <thead class='thead-light'>
                     <tr>
                         <th>Dispositivos BLE</th>
                     </tr>
@@ -94,9 +75,13 @@
                 </tbody>
             </table>
         </div>
-        <div class='card-body col-md-12' id='graphContainer'>
-
         </div>
+        <div class='card col-md-12' id='metrics' hidden>
+            <div class='card-header'><h5><span class='fas fa-chart-bar'> Métricas</span></h5></div>
+        <div class='card-body col-md-12' id='graphContainer'>
+        </div>
+        </div>
+    <div class='card-footer'>2021 - matandoocorpo.cc / .:EA1NK:.</div>
     </div>
 
 </body>
@@ -109,6 +94,9 @@
         reader.onload = function () {
             var text = reader.result;
             log = text
+            getLogInfo().then(function(data){
+                createInfoTable(data)
+            })
             getFPS().then(function (data) {
                 plotFPS(data)
             })
@@ -121,14 +109,45 @@
                 plotUDPStats(data)
             })
 
+            getNetworkErrors().then(function(data){
+                console.log(data)
+                plotNetworkErrors(data)
+            })
+
             getAntRxFails().then(function (data) {
                 console.log(data);
                 plotAntRxFails(data)
             })
+            $("#antDevices tbody, #bleDevices tbody, #graphContainer, #resumen .card-body").empty()
+           $("#peripherals, #metrics, #resumen").attr('hidden',false)
         };
         reader.readAsText(input.files[0]);
     };
 
+    async function getLogInfo(){
+        var loglines = log.split("\r\n");
+        var startTime = loglines.filter(line=>line.includes("Log Time:"))
+        var endTime = loglines[loglines.length-2].substring(1,9);
+        var gameVersion = loglines.filter(line=>line.includes("Game Version:"))
+        var launcherVersion = loglines.filter(line=>line.includes("Launcher Version"))
+        var GraphicsVendor = loglines.filter(line=>line.includes("Graphics Vendor"))
+        var GraphicsRenderer = loglines.filter(line=>line.includes("Graphics Renderer"))
+        var deviceRAM = loglines.filter(line=>line.includes("RAM:"))
+        var deviceCPU = loglines.filter(line=>line.includes("CPU:"))
+
+        var logInfo = {
+            startTime:startTime[0].split("]")[1].trim(),
+            endTime:endTime,
+            gameVersion:gameVersion[0].split("]")[1].trim(),
+            launcherVersion:launcherVersion[0].split("]")[0].trim(),
+            GraphicsRenderer:GraphicsRenderer[0].split("]")[1].trim(),
+            GraphicsVendor:GraphicsVendor[0].split("]")[1].trim(),
+            deviceCPU:deviceCPU[0].split("]")[1].trim(),
+            deviceRAM:deviceRAM[0].split("]")[1].trim()
+        }
+
+        return logInfo
+    }
     async function getDevices() {
         var logLines = log.split("\r\n")
         detectedDevices = logLines.filter(line => line.includes("[ANT]") || line.includes("[BLE]"))
@@ -198,16 +217,18 @@
         var loglines = log.split("\r\n")
         var antRxFailsCh1 = []
         var antRxFailsCh2 = []
-
+        var antRxFailsCh3 = []
+        
         antRxFailsLines = loglines.filter(line => line.includes("ANT  : Rx Fail on channel"));
 
         antRxFailsLines.forEach(line => {
+            line = line.replace(/(\r\n|\n|\r)/gm, ""); //Windows things..
             var measure_time = line.substring(1, 9)
             var eventChannel = line.substring(line.length - 1)
             switch (eventChannel) {
                 case "1":
                     var lastItem = antRxFailsCh1[antRxFailsCh1.length - 1]
-                    if (antRxFailsCh1.length >0 && (lastItem[0] == measure_time)) {
+                    if (antRxFailsCh1.length > 0 && (lastItem[0] == measure_time)) {
                         antRxFailsCh1[antRxFailsCh1.length - 1][1]++
                     } else {
                         antRxFailsCh1.push([measure_time, 1])
@@ -223,13 +244,40 @@
                     }
                     //antRxFailsCh2.push([measure_time,1])
                     break;
+
+                case "3":
+                    var lastItem = antRxFailsCh3[antRxFailsCh3.length - 1]
+                    if (antRxFailsCh3.length >0 && (lastItem[0] == measure_time)) {
+                        antRxFailsCh3[antRxFailsCh3.length - 1][1]++
+                    } else {
+                        antRxFailsCh3.push([measure_time, 1])
+                    }
+                    //antRxFailsCh2.push([measure_time,1])
+                    break;
             }
         })
 
-        return [antRxFailsCh1, antRxFailsCh2]
+        return [antRxFailsCh1, antRxFailsCh2, antRxFailsCh3]
 
     }
 
+    async function getNetworkErrors(){
+        var loglines = log.split("\r\n")
+        networkErrorLines = loglines.filter(line => line.includes("NETWORK:error (6)"));
+        var networkErrors = [];
+        networkErrorLines.forEach(line=>{
+            var measure_time = line.substring(1,9)
+            var lastItem = networkErrors[networkErrors.length -1]
+            if(networkErrors.length > 0 && (lastItem[0]==measure_time)){
+                networkErrors[networkErrors.length-1][1]++
+            } else {
+                networkErrors.push([measure_time,1])
+            }
+
+        })
+
+        return networkErrors
+    }
     function plotFPS(data) {
         console.log(data)
         $("#graphContainer").append(
@@ -314,32 +362,33 @@
                 data: data.time
             },
             yAxis: {
-                type: 'value'
+                //type: 'value'
             },
+            dataZoom:[],
             series: [{
                     name: 'StC Rx',
                     data: udpStCRx,
                     type: 'line',
-                    smooth: true,
+                    smooth: false,
                 },
                 {
                     name: 'Rx Error',
                     data: udpRxError,
                     type: 'line',
-                    smooth: true,
+                    smooth: false,
 
                 },
                 {
                     name: 'CtS Tx',
                     data: udpCtSTx,
                     type: 'line',
-                    smooth: true,
+                    smooth: false,
                 },
                 {
                     name: 'Tx Error',
                     data: udpTxError,
                     type: 'line',
-                    smooth: true,
+                    smooth: false,
                 }
             ]
         };
@@ -359,6 +408,8 @@
             return item[1];
         });
 
+        const deviceCH1 = getDeviceOnChan(1);
+
         var ch1chartDom = document.getElementById("antRxFailsGraphCh1")
         var ch1Chart = echarts.init(ch1chartDom, 'dark', {
             height: 250,
@@ -369,7 +420,7 @@
         option = {
             animation: false,
             title: {
-                text: 'CH1 Rx Error'
+                text: 'ANT+ CH1 Rx Error ' + deviceCH1
             },
             tooltip: {
                 trigger: 'axis',
@@ -402,6 +453,8 @@
             return item[1];
         });
 
+        const deviceCH2 = getDeviceOnChan(2);
+
         var ch2chartDom = document.getElementById("antRxFailsGraphCh2")
         var ch2Chart = echarts.init(ch2chartDom, 'dark', {
             height: 250,
@@ -412,7 +465,7 @@
         option = {
             animation: false,
             title: {
-                text: 'CH2 Rx Error'
+                text: 'ANT+ CH2 Rx Error ' + deviceCH2
             },
             tooltip: {
                 trigger: 'axis',
@@ -435,6 +488,151 @@
 
         option && ch2Chart.setOption(option);
 
+        
+
+        $("#graphContainer").append(
+            `<div id='antRxFailsGraphCh3' class='card-body col-md-12 d-flex justify-content-center'></div>`)
+
+        const errorTimeCh3 = data[2].map(function (item) {
+            return item[0];
+        });
+        const errorCh3 = data[2].map(function (item) {
+            return item[1];
+        });
+
+        const deviceCH3 = getDeviceOnChan(3);
+
+        var ch3chartDom = document.getElementById("antRxFailsGraphCh3")
+        var ch3Chart = echarts.init(ch3chartDom, 'dark', {
+            height: 250,
+            width: window.innerWidth * 0.9,
+            position: 'absolute'
+        })
+        var option;
+        option = {
+            animation: false,
+            title: {
+                text: 'ANT+ CH3 Rx Error ' + deviceCH3
+            },
+            tooltip: {
+                trigger: 'axis',
+                formatter: 'Time: {b0}</br>RxFails: {c0}'
+            },
+            xAxis: {
+                type: 'category',
+                data: errorTimeCh3
+            },
+            yAxis: {
+                type: 'value'
+            },
+            series: [{
+                data: errorCh3,
+                type: 'bar',
+                smooth: true,
+                areaStyle: {}
+            }]
+        };
+
+        option && ch3Chart.setOption(option);
+
+
+
+
+        
+    }
+
+    function plotNetworkErrors(data){
+        $("#graphContainer").append(
+            `<div id='networkErrorsGraph' class='card-body col-md-12 d-flex justify-content-center'></div>`)
+
+        const errorTime = data.map(function (item) {
+            return item[0];
+        });
+        const errorCount = data.map(function (item) {
+            return item[1];
+        });
+
+        var errorNetchartDom = document.getElementById("networkErrorsGraph")
+        var netErrorChart = echarts.init(errorNetchartDom, 'dark', {
+            height: 250,
+            width: window.innerWidth * 0.9,
+            position: 'absolute'
+        })
+        var option;
+        option = {
+            animation: false,
+            title: {
+                text: 'Network Errors'
+            },
+            tooltip: {
+                trigger: 'axis',
+                formatter: 'Time: {b0}</br>Errors: {c0}'
+            },
+            xAxis: {
+                type: 'category',
+                data: errorTime
+            },
+            yAxis: {
+                type: 'value'
+            },
+            series: [{
+                data: errorCount,
+                type: 'bar',
+                smooth: true,
+                areaStyle: {}
+            }]
+        };
+
+        option && netErrorChart.setOption(option);
+    }
+
+    function createInfoTable(data){
+
+        var table =`<table class='table table-bordered table-stripped col-md-12'>
+            <thead class='thead-light'>
+                <tr>
+                    <th class='col-md-3'>Inicio</th>
+                    <th class='col-md-3'>Fin</>
+                    <th class='col-md-3'>Juego</th>
+                    <th class='col-md-3'>Lanzador</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                <td>${data.startTime}</td>
+                <td>${data.endTime}</td>
+                <td>${data.gameVersion}</td>
+                <td>${data.launcherVersion}</td>
+                </tr>
+                </tbody>
+                <thead class='thead-light'>
+                <tr>
+                    <th class='col-md-3'>Graphics Vendor</th>
+                    <th class='col-md-3'>Graphics Renderer</>
+                    <th class='col-md-3'>CPU</th>
+                    <th class='col-md-3'>RAM</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                <td>${data.GraphicsVendor}</td>
+                <td>${data.GraphicsRenderer}</td>
+                <td>${data.deviceCPU}</td>
+                <td>${data.deviceRAM}</td>
+                </tr>
+                </tbody>
+            </table>`
+        $("#resumen .card-body").append(table)
+    }
+    function getDeviceOnChan(channel){
+        
+        var loglines = log.split("\r\n");
+        var device = loglines.filter(line=>line.includes('Setting Channel ID for chan '+channel))
+        device = device[0].replace(/(\r\n|\n|\r)/gm, ""); //Windows things..
+        var device_init = device.indexOf('(');
+        var device_end = device.indexOf(')')
+        var device_string = device.substring(device_init,device_end+1);
+        return device_string
     }
 </script>
 

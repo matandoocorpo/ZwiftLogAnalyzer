@@ -1,0 +1,6 @@
+body{
+    zoom: 0.75 !important;
+}
+#antDevices tr, #bleDevices tr{
+    font-size:10px !important;
+}

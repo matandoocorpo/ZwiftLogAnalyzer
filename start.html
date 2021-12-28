@@ -24,14 +24,14 @@
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
-        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
-        crossorigin="anonymous"></script>
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous">
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
-        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
-        crossorigin="anonymous"></script>
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous">
+    </script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
-        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
-        crossorigin="anonymous"></script>
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous">
+    </script>
 
 </head>
 
@@ -69,7 +69,7 @@
         </div>
     </div>-->
     <div class="card col-md-12">
-    <div class="card-header">Zwift Log Analyzer</div>
+        <div class="card-header">Zwift Log Analyzer</div>
         <div class="card-body">
             <input type="file" id='logfile' onchange=openFile(event)>
         </div>
@@ -95,10 +95,10 @@
             </table>
         </div>
         <div class='card-body col-md-12' id='graphContainer'>
-            
+
         </div>
     </div>
-    
+
 </body>
 <script>
     var log, devices, detectedDevices, fpsData;
@@ -112,13 +112,18 @@
             getFPS().then(function (data) {
                 plotFPS(data)
             })
-            
+
             getDevices().then(function () {
                 createDevicesTable()
             })
 
             getUDPStats().then(function (data) {
                 plotUDPStats(data)
+            })
+
+            getAntRxFails().then(function (data) {
+                console.log(data);
+                plotAntRxFails(data)
             })
         };
         reader.readAsText(input.files[0]);
@@ -127,7 +132,11 @@
     async function getDevices() {
         var logLines = log.split("\r\n")
         detectedDevices = logLines.filter(line => line.includes("[ANT]") || line.includes("[BLE]"))
-        devices = { ant: [], ble: [], used: [] }
+        devices = {
+            ant: [],
+            ble: [],
+            used: []
+        }
         //Buscamos los dispositivos conectados
 
         detectedDevices.forEach(element => {
@@ -157,30 +166,74 @@
         return fpsData
     }
 
-    async function getUDPStats(){
+    async function getUDPStats() {
         var loglines = log.split("\r\n");
-        var udpStats = {time:[],StCRx:[], RxError:[], CtSTx:[], TxError:[]}
+        var udpStats = {
+            time: [],
+            StCRx: [],
+            RxError: [],
+            CtSTx: [],
+            TxError: []
+        }
         udpLines = loglines.filter(line => line.includes("UDP metrics"));
         udpLines.forEach(udpLine => {
             var measure_time = udpLine.substring(1, 9);
             var usefulData = udpLine.split("UDP metrics")[1].trim();
-            usefulData = usefulData.replace('StC Rx','"StCRx"')
-            usefulData = usefulData.replace('Rx error','"Rxerror"')
-            usefulData = usefulData.replace('CtS Tx','"CtSTx"')
-            usefulData = usefulData.replace('Tx error','"Txerror"')
+            usefulData = usefulData.replace('StC Rx', '"StCRx"')
+            usefulData = usefulData.replace('Rx error', '"Rxerror"')
+            usefulData = usefulData.replace('CtS Tx', '"CtSTx"')
+            usefulData = usefulData.replace('Tx error', '"Txerror"')
             usefulData = JSON.parse(usefulData);
             udpStats.time.push(measure_time)
             udpStats.StCRx.push(usefulData.StCRx)
             udpStats.RxError.push(usefulData.Rxerror)
             udpStats.CtSTx.push(usefulData.CtSTx)
             udpStats.TxError.push(usefulData.Txerror)
-            
+
         })
         return udpStats;
     }
-    
+
+    async function getAntRxFails() {
+        var loglines = log.split("\r\n")
+        var antRxFailsCh1 = []
+        var antRxFailsCh2 = []
+
+        antRxFailsLines = loglines.filter(line => line.includes("ANT  : Rx Fail on channel"));
+
+        antRxFailsLines.forEach(line => {
+            var measure_time = line.substring(1, 9)
+            var eventChannel = line.substring(line.length - 1)
+            switch (eventChannel) {
+                case "1":
+                    var lastItem = antRxFailsCh1[antRxFailsCh1.length - 1]
+                    if (antRxFailsCh1.length >0 && (lastItem[0] == measure_time)) {
+                        antRxFailsCh1[antRxFailsCh1.length - 1][1]++
+                    } else {
+                        antRxFailsCh1.push([measure_time, 1])
+                    }
+                    //antRxFailsCh1.push([measure_time,1])
+                    break;
+                case "2":
+                    var lastItem = antRxFailsCh2[antRxFailsCh2.length - 1]
+                    if (antRxFailsCh2.length >0 && (lastItem[0] == measure_time)) {
+                        antRxFailsCh2[antRxFailsCh2.length - 1][1]++
+                    } else {
+                        antRxFailsCh2.push([measure_time, 1])
+                    }
+                    //antRxFailsCh2.push([measure_time,1])
+                    break;
+            }
+        })
+
+        return [antRxFailsCh1, antRxFailsCh2]
+
+    }
+
     function plotFPS(data) {
-        $("#graphContainer").append(`<div id='fpsGraph' class='card-body col-md-12 d-flex justify-content-center'></div>`)
+        console.log(data)
+        $("#graphContainer").append(
+            `<div id='fpsGraph' class='card-body col-md-12 d-flex justify-content-center'></div>`)
         const fpsTime = data.map(function (item) {
             return item[0];
         });
@@ -188,7 +241,11 @@
             return item[1];
         });
         var fpschartDom = document.getElementById("fpsGraph")
-        var fpsChart = echarts.init(fpschartDom, 'dark', { height: 250, width: window.innerWidth * 0.9, position: 'absolute' })
+        var fpsChart = echarts.init(fpschartDom, 'dark', {
+            height: 250,
+            width: window.innerWidth * 0.9,
+            position: 'absolute'
+        })
         var option;
         option = {
             animation: false,
@@ -206,14 +263,12 @@
             yAxis: {
                 type: 'value'
             },
-            series: [
-                {
-                    data: fpsVal,
-                    type: 'line',
-                    smooth: true,
-                    areaStyle: {}
-                }
-            ]
+            series: [{
+                data: fpsVal,
+                type: 'line',
+                smooth: true,
+                areaStyle: {}
+            }]
         };
 
         option && fpsChart.setOption(option);
@@ -227,23 +282,28 @@
     }
 
     function plotUDPStats(data) {
-        $("#graphContainer").append(`<div id='udpGraph' class='card-body col-md-12 d-flex justify-content-center'></div>`)
+        $("#graphContainer").append(
+            `<div id='udpGraph' class='card-body col-md-12 d-flex justify-content-center'></div>`)
         const udpTime = data.time
         const udpStCRx = data.StCRx
         const udpRxError = data.RxError
         const udpCtSTx = data.CtSTx
         const udpTxError = data.TxError
         var udpchartDom = document.getElementById("udpGraph")
-        var udpChart = echarts.init(udpchartDom, 'dark', { height: 250, width: window.innerWidth * 0.9, position: 'absolute' })
+        var udpChart = echarts.init(udpchartDom, 'dark', {
+            height: 250,
+            width: window.innerWidth * 0.9,
+            position: 'absolute'
+        })
         var option;
-        
+
         option = {
             animation: false,
             title: {
                 text: 'UDP Stats (pkts/minute)'
             },
-            legend:{
-                data:['StC Rx','Rx Error','CtS Tx','Tx Error']
+            legend: {
+                data: ['StC Rx', 'Rx Error', 'CtS Tx', 'Tx Error']
             },
             tooltip: {
                 trigger: 'axis',
@@ -256,28 +316,27 @@
             yAxis: {
                 type: 'value'
             },
-            series: [
-                {
-                    name:'StC Rx',
+            series: [{
+                    name: 'StC Rx',
                     data: udpStCRx,
                     type: 'line',
                     smooth: true,
                 },
                 {
-                    name:'Rx Error',
+                    name: 'Rx Error',
                     data: udpRxError,
                     type: 'line',
                     smooth: true,
-                   
+
                 },
                 {
-                    name:'CtS Tx',
+                    name: 'CtS Tx',
                     data: udpCtSTx,
                     type: 'line',
                     smooth: true,
                 },
                 {
-                    name:'Tx Error',
+                    name: 'Tx Error',
                     data: udpTxError,
                     type: 'line',
                     smooth: true,
@@ -286,6 +345,96 @@
         };
 
         option && udpChart.setOption(option);
+    }
+
+    function plotAntRxFails(data) {
+
+        $("#graphContainer").append(
+            `<div id='antRxFailsGraphCh1' class='card-body col-md-12 d-flex justify-content-center'></div>`)
+
+        const errorTimeCh1 = data[0].map(function (item) {
+            return item[0];
+        });
+        const errorCh1 = data[0].map(function (item) {
+            return item[1];
+        });
+
+        var ch1chartDom = document.getElementById("antRxFailsGraphCh1")
+        var ch1Chart = echarts.init(ch1chartDom, 'dark', {
+            height: 250,
+            width: window.innerWidth * 0.9,
+            position: 'absolute'
+        })
+        var option;
+        option = {
+            animation: false,
+            title: {
+                text: 'CH1 Rx Error'
+            },
+            tooltip: {
+                trigger: 'axis',
+                formatter: 'Time: {b0}</br>RxFails: {c0}'
+            },
+            xAxis: {
+                type: 'category',
+                data: errorTimeCh1
+            },
+            yAxis: {
+                type: 'value'
+            },
+            series: [{
+                data: errorCh1,
+                type: 'bar',
+                smooth: true,
+                areaStyle: {}
+            }]
+        };
+
+        option && ch1Chart.setOption(option);
+
+        $("#graphContainer").append(
+            `<div id='antRxFailsGraphCh2' class='card-body col-md-12 d-flex justify-content-center'></div>`)
+
+        const errorTimeCh2 = data[1].map(function (item) {
+            return item[0];
+        });
+        const errorCh2 = data[1].map(function (item) {
+            return item[1];
+        });
+
+        var ch2chartDom = document.getElementById("antRxFailsGraphCh2")
+        var ch2Chart = echarts.init(ch2chartDom, 'dark', {
+            height: 250,
+            width: window.innerWidth * 0.9,
+            position: 'absolute'
+        })
+        var option;
+        option = {
+            animation: false,
+            title: {
+                text: 'CH2 Rx Error'
+            },
+            tooltip: {
+                trigger: 'axis',
+                formatter: 'Time: {b0}</br>RxFails: {c0}'
+            },
+            xAxis: {
+                type: 'category',
+                data: errorTimeCh2
+            },
+            yAxis: {
+                type: 'value'
+            },
+            series: [{
+                data: errorCh2,
+                type: 'bar',
+                smooth: true,
+                areaStyle: {}
+            }]
+        };
+
+        option && ch2Chart.setOption(option);
+
     }
 </script>
 

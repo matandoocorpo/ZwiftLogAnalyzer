@@ -139,7 +139,7 @@
             startTime:startTime[0].split("]")[1].trim(),
             endTime:endTime,
             gameVersion:gameVersion[0].split("]")[1].trim(),
-            launcherVersion:launcherVersion[0].split("]")[0].trim(),
+            launcherVersion:launcherVersion[0].split("]")[1].trim(),
             GraphicsRenderer:GraphicsRenderer[0].split("]")[1].trim(),
             GraphicsVendor:GraphicsVendor[0].split("]")[1].trim(),
             deviceCPU:deviceCPU[0].split("]")[1].trim(),
@@ -218,13 +218,32 @@
         var antRxFailsCh1 = []
         var antRxFailsCh2 = []
         var antRxFailsCh3 = []
-        
+        var rxFails = []
+        var rxFailsTemplate = {channel:null, data:[]};
+        var auxChannels = [];
+
         antRxFailsLines = loglines.filter(line => line.includes("ANT  : Rx Fail on channel"));
 
         antRxFailsLines.forEach(line => {
             line = line.replace(/(\r\n|\n|\r)/gm, ""); //Windows things..
             var measure_time = line.substring(1, 9)
             var eventChannel = line.substring(line.length - 1)
+            
+            if(auxChannels.includes(eventChannel) == false){
+                auxChannels.push(eventChannel)
+                rxFails.push({channel:eventChannel, data:[]})
+            }
+            
+            var objIndex = rxFails.findIndex(channel=>channel.channel == eventChannel)
+            console.log(objIndex)
+
+            var lastItem = rxFails[objIndex].data[rxFails[objIndex].data.length - 1]
+            if (rxFails[objIndex].data.length > 0 && (lastItem[0] == measure_time)) {
+                        rxFails[objIndex].data[rxFails[objIndex].data.length - 1][1]++
+                    } else {
+                        rxFails[objIndex].data.push([measure_time, 1])
+                    }
+
             switch (eventChannel) {
                 case "1":
                     var lastItem = antRxFailsCh1[antRxFailsCh1.length - 1]
@@ -256,8 +275,8 @@
                     break;
             }
         })
-
-        return [antRxFailsCh1, antRxFailsCh2, antRxFailsCh3]
+        
+        return [antRxFailsCh1, antRxFailsCh2, antRxFailsCh3, rxFails]
 
     }
 
@@ -398,29 +417,31 @@
 
     function plotAntRxFails(data) {
 
-        $("#graphContainer").append(
-            `<div id='antRxFailsGraphCh1' class='card-body col-md-12 d-flex justify-content-center'></div>`)
+        data[3].forEach(channel =>{
+            var channel_name = channel.channel
+            $("#graphContainer").append(
+            `<div id='antRxFailsGraphCh${channel_name}' class='card-body col-md-12 d-flex justify-content-center'></div>`)
 
-        const errorTimeCh1 = data[0].map(function (item) {
+            const errorTime = channel.data.map(function (item) {
             return item[0];
         });
-        const errorCh1 = data[0].map(function (item) {
+        const errorCount = channel.data.map(function (item) {
             return item[1];
         });
 
-        const deviceCH1 = getDeviceOnChan(1);
-
-        var ch1chartDom = document.getElementById("antRxFailsGraphCh1")
-        var ch1Chart = echarts.init(ch1chartDom, 'dark', {
+        const device = getDeviceOnChan(channel_name);
+        var chartDom = document.getElementById("antRxFailsGraphCh"+channel_name)
+        var errorChart = echarts.init(chartDom, 'dark', {
             height: 250,
             width: window.innerWidth * 0.9,
             position: 'absolute'
         })
+
         var option;
         option = {
             animation: false,
             title: {
-                text: 'ANT+ CH1 Rx Error ' + deviceCH1
+                text: 'ANT+ CH'+ channel_name +' Rx Error ' + device
             },
             tooltip: {
                 trigger: 'axis',
@@ -428,117 +449,23 @@
             },
             xAxis: {
                 type: 'category',
-                data: errorTimeCh1
+                data: errorTime
             },
             yAxis: {
                 type: 'value'
             },
             series: [{
-                data: errorCh1,
+                data: errorCount,
                 type: 'bar',
                 smooth: true,
                 areaStyle: {}
             }]
         };
 
-        option && ch1Chart.setOption(option);
+        option && errorChart.setOption(option);
 
-        $("#graphContainer").append(
-            `<div id='antRxFailsGraphCh2' class='card-body col-md-12 d-flex justify-content-center'></div>`)
-
-        const errorTimeCh2 = data[1].map(function (item) {
-            return item[0];
-        });
-        const errorCh2 = data[1].map(function (item) {
-            return item[1];
-        });
-
-        const deviceCH2 = getDeviceOnChan(2);
-
-        var ch2chartDom = document.getElementById("antRxFailsGraphCh2")
-        var ch2Chart = echarts.init(ch2chartDom, 'dark', {
-            height: 250,
-            width: window.innerWidth * 0.9,
-            position: 'absolute'
         })
-        var option;
-        option = {
-            animation: false,
-            title: {
-                text: 'ANT+ CH2 Rx Error ' + deviceCH2
-            },
-            tooltip: {
-                trigger: 'axis',
-                formatter: 'Time: {b0}</br>RxFails: {c0}'
-            },
-            xAxis: {
-                type: 'category',
-                data: errorTimeCh2
-            },
-            yAxis: {
-                type: 'value'
-            },
-            series: [{
-                data: errorCh2,
-                type: 'bar',
-                smooth: true,
-                areaStyle: {}
-            }]
-        };
 
-        option && ch2Chart.setOption(option);
-
-        
-
-        $("#graphContainer").append(
-            `<div id='antRxFailsGraphCh3' class='card-body col-md-12 d-flex justify-content-center'></div>`)
-
-        const errorTimeCh3 = data[2].map(function (item) {
-            return item[0];
-        });
-        const errorCh3 = data[2].map(function (item) {
-            return item[1];
-        });
-
-        const deviceCH3 = getDeviceOnChan(3);
-
-        var ch3chartDom = document.getElementById("antRxFailsGraphCh3")
-        var ch3Chart = echarts.init(ch3chartDom, 'dark', {
-            height: 250,
-            width: window.innerWidth * 0.9,
-            position: 'absolute'
-        })
-        var option;
-        option = {
-            animation: false,
-            title: {
-                text: 'ANT+ CH3 Rx Error ' + deviceCH3
-            },
-            tooltip: {
-                trigger: 'axis',
-                formatter: 'Time: {b0}</br>RxFails: {c0}'
-            },
-            xAxis: {
-                type: 'category',
-                data: errorTimeCh3
-            },
-            yAxis: {
-                type: 'value'
-            },
-            series: [{
-                data: errorCh3,
-                type: 'bar',
-                smooth: true,
-                areaStyle: {}
-            }]
-        };
-
-        option && ch3Chart.setOption(option);
-
-
-
-
-        
     }
 
     function plotNetworkErrors(data){
@@ -624,6 +551,7 @@
             </table>`
         $("#resumen .card-body").append(table)
     }
+    
     function getDeviceOnChan(channel){
         
         var loglines = log.split("\r\n");
@@ -632,6 +560,7 @@
         var device_init = device.indexOf('(');
         var device_end = device.indexOf(')')
         var device_string = device.substring(device_init,device_end+1);
+        var device_id = device_string.split("device")[1]
         return device_string
     }
 </script>

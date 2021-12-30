@@ -12,6 +12,6 @@
 - No need to upload any file to a server, information is not stored.
 - It can work offline!
 
-![Screenshot](Screenshot.jpg)
+![Screenshot](Screenshot.png)
 
 2021-2022 matandoocorpo.cc 

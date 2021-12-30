@@ -12,6 +12,16 @@
 - No need to upload any file to a server, information is not stored.
 - It can work offline!
 
+## Instalación
+  Descargar zip o: 
+   ```
+  git clone https://github.com/matandoocorpo/ZwiftLogAnalyzer.git
+  ```
+## Installation
+  Download zip or:
+   ```
+  git clone https://github.com/matandoocorpo/ZwiftLogAnalyzer.git
+  ```
 ![Screenshot](Screenshot.png)
 
 2021-2022 matandoocorpo.cc 

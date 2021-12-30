@@ -1,10 +1,14 @@
 var log, devices, detectedDevices, fpsData;
 
 var openFile = function (event) {
+  
+  $("#spinner").attr('hidden', false)
+  $("#peripherals, #metrics, #resumen").attr("hidden", true);
   var input = event.target;
-
   var reader = new FileReader();
+  
   reader.onload = function () {
+   
     var text = reader.result;
     log = text;
     getLogInfo().then(function (data) {
@@ -29,9 +33,16 @@ var openFile = function (event) {
     getAntRxFails().then(function (data) {
       plotAntRxFails(data);
     });
+
+    getAntPairings().then(function (data) {
+      plotAntPairings(data);
+
+    });
+
     $(
       "#antDevices tbody, #bleDevices tbody, #graphContainer, #resumen .card-body"
     ).empty();
+    $("#spinner").attr('hidden', true)
     $("#peripherals, #metrics, #resumen").attr("hidden", false);
   };
   reader.readAsText(input.files[0]);
@@ -78,7 +89,7 @@ async function getDevices() {
     ble: [],
     used: [],
   };
- 
+
   detectedDevices.forEach((element) => {
     element = element.substring(10).trim();
     if (element.includes(["ANT"]) && !devices.ant.includes(element)) {
@@ -138,7 +149,10 @@ async function getAntRxFails() {
   var antRxFailsCh2 = [];
   var antRxFailsCh3 = [];
   var rxFails = [];
-  var rxFailsTemplate = { channel: null, data: [] };
+  var rxFailsTemplate = {
+    channel: null,
+    data: []
+  };
   var auxChannels = [];
 
   antRxFailsLines = loglines.filter((line) =>
@@ -152,7 +166,10 @@ async function getAntRxFails() {
 
     if (auxChannels.includes(eventChannel) == false) {
       auxChannels.push(eventChannel);
-      rxFails.push({ channel: eventChannel, data: [] });
+      rxFails.push({
+        channel: eventChannel,
+        data: []
+      });
     }
 
     var objIndex = rxFails.findIndex(
@@ -172,21 +189,44 @@ async function getAntRxFails() {
 
 async function getNetworkErrors() {
   var loglines = log.split("\r\n");
-  networkErrorLines = loglines.filter((line) =>
-    line.includes("NETWORK:error (6)")
-  );
   var networkErrors = [];
-  networkErrorLines.forEach((line) => {
+  loglines.forEach((line) => {
     var measure_time = line.substring(1, 9);
     var lastItem = networkErrors[networkErrors.length - 1];
-    if (networkErrors.length > 0 && lastItem[0] == measure_time) {
-      networkErrors[networkErrors.length - 1][1]++;
+    if (line.includes("NETWORK:error (6)")) {
+      if (networkErrors.length > 0 && lastItem[0] == measure_time) {
+        networkErrors[networkErrors.length - 1][1]++;
+      } else {
+        networkErrors.push([measure_time, 1]);
+      }
     } else {
-      networkErrors.push([measure_time, 1]);
+      networkErrors.push([measure_time, 0]);
     }
   });
 
   return networkErrors;
+}
+
+async function getAntPairings() {
+
+  var loglines = log.split("\r\n")
+
+  var antDisconnects = [];
+
+  loglines.forEach((line) => {
+    var measure_time = line.substring(1, 9);
+    var lastItem = antDisconnects[antDisconnects.length - 1];
+    if (line.includes("ANT  : Starting ANT search")) {
+      if (antDisconnects.length > 0 && lastItem[0] == measure_time) {
+        antDisconnects[antDisconnects.length - 1][1]++;
+      } else {
+        antDisconnects.push([measure_time, 1]);
+      }
+    } else {
+      antDisconnects.push([measure_time, 0]);
+    }
+  });
+  return antDisconnects;
 }
 
 function plotFPS(data) {
@@ -222,14 +262,12 @@ function plotFPS(data) {
     yAxis: {
       type: "value",
     },
-    series: [
-      {
-        data: fpsVal,
-        type: "line",
-        smooth: true,
-        areaStyle: {},
-      },
-    ],
+    series: [{
+      data: fpsVal,
+      type: "line",
+      smooth: true,
+      areaStyle: {},
+    }, ],
   };
 
   option && fpsChart.setOption(option);
@@ -272,8 +310,7 @@ function plotUDPStats(data) {
     },
     tooltip: {
       trigger: "axis",
-      formatter:
-        "Time: {b0}</br>StC: {c0}</br>Rx Error: {c1}</br>CtS: {c2}</br>Tx Error: {c3}</br>",
+      formatter: "Time: {b0}</br>StC: {c0}</br>Rx Error: {c1}</br>CtS: {c2}</br>Tx Error: {c3}</br>",
     },
     xAxis: {
       type: "category",
@@ -283,8 +320,7 @@ function plotUDPStats(data) {
       //type: 'value'
     },
     dataZoom: [],
-    series: [
-      {
+    series: [{
         name: "StC Rx",
         data: udpStCRx,
         type: "line",
@@ -353,14 +389,12 @@ function plotAntRxFails(data) {
       yAxis: {
         type: "value",
       },
-      series: [
-        {
-          data: errorCount,
-          type: "bar",
-          smooth: true,
-          areaStyle: {},
-        },
-      ],
+      series: [{
+        data: errorCount,
+        type: "bar",
+        smooth: true,
+        areaStyle: {},
+      }, ],
     };
 
     option && errorChart.setOption(option);
@@ -402,17 +436,61 @@ function plotNetworkErrors(data) {
     yAxis: {
       type: "value",
     },
-    series: [
-      {
-        data: errorCount,
-        type: "bar",
-        smooth: true,
-        areaStyle: {},
-      },
-    ],
+    series: [{
+      data: errorCount,
+      type: "bar",
+      smooth: true,
+      areaStyle: {},
+    }, ],
   };
 
   option && netErrorChart.setOption(option);
+}
+
+function plotAntPairings(data) {
+  $("#graphContainer").append(
+    `<div id='antPairings' class='card-body col-md-12 d-flex justify-content-center'></div>`
+  );
+
+  const pairingTime = data.map(function (item) {
+    return item[0];
+  });
+  const pairingCount = data.map(function (item) {
+    return item[1];
+  });
+
+  var pairingChartDom = document.getElementById("antPairings");
+  var pairingChart = echarts.init(pairingChartDom, "dark", {
+    height: 250,
+    width: window.innerWidth * 0.9,
+    position: "absolute",
+  });
+  var option;
+  option = {
+    animation: false,
+    title: {
+      text: "ANT+ Repairings",
+    },
+    tooltip: {
+      trigger: "axis",
+      formatter: "Time: {b0}",
+    },
+    xAxis: {
+      type: "category",
+      data: pairingTime,
+    },
+    yAxis: {
+      type: "value",
+    },
+    series: [{
+      data: pairingCount,
+      type: "bar",
+      smooth: true,
+      areaStyle: {},
+    }, ],
+  };
+
+  option && pairingChart.setOption(option);
 }
 
 function createInfoTable(data) {
@@ -466,7 +544,7 @@ function getDeviceOnChan(channel) {
   device_id = device_id.substring(0, 4);
   device_string = devices.ant.filter(
     (device) =>
-      device.includes(device_id) && device.indexOf("Non-Selected") == -1
+    device.includes(device_id) && device.indexOf("Non-Selected") == -1
   );
 
   return device_string[0].split(":")[1].split("[ANT]")[0];

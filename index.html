@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Title</title>
+    <title>Simple Zwift Log Analyzer</title>
     <!-- Required meta tags -->
     <meta charset="utf-8" />
     <meta
@@ -16,12 +16,13 @@
 
     <link rel="stylesheer" href="styles.css" />
     <script src='functions.js'></script>
-    <script
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js" integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!--<script
       src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.2.2/theme/dark.min.js"
       integrity="sha512-AWm1gUw5vg8G8eVtZGXLySa9WpCDfZFut0YzGxhcjqYUXwKbM1rzJVzkDt9JXlOOO2ECKEmw1WOIJpRXJu9LiQ=="
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
-    ></script>
+    ></script>-->
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bootswatch@4.5.2/dist/darkly/bootstrap.min.css"
@@ -78,6 +79,11 @@
       </div>
       <div class="card-body">
         <input type="file" id="logfile" onchange="openFile(event)" />
+      </div>
+      <div class="card-body" id='spinner' hidden>
+        <div class="spinner-border text-primary" role="status">
+          <span class="sr-only">Loading...</span>
+        </div>
       </div>
       <div class="card col-md-12" id="resumen" hidden>
         <div class="card-header">

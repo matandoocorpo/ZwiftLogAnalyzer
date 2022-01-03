@@ -1,14 +1,10 @@
 var log, devices, detectedDevices, fpsData;
 
 var openFile = function (event) {
-  
-  $("#spinner").attr('hidden', false)
-  $("#peripherals, #metrics, #resumen").attr("hidden", true);
   var input = event.target;
+
   var reader = new FileReader();
-  
   reader.onload = function () {
-   
     var text = reader.result;
     log = text;
     getLogInfo().then(function (data) {
@@ -33,16 +29,9 @@ var openFile = function (event) {
     getAntRxFails().then(function (data) {
       plotAntRxFails(data);
     });
-
-    getAntPairings().then(function (data) {
-      plotAntPairings(data);
-
-    });
-
     $(
       "#antDevices tbody, #bleDevices tbody, #graphContainer, #resumen .card-body"
     ).empty();
-    $("#spinner").attr('hidden', true)
     $("#peripherals, #metrics, #resumen").attr("hidden", false);
   };
   reader.readAsText(input.files[0]);
@@ -64,10 +53,17 @@ async function getLogInfo() {
   );
   var deviceRAM = loglines.filter((line) => line.includes("RAM:"));
   var deviceCPU = loglines.filter((line) => line.includes("CPU:"));
-
+  var username = loglines.filter(line=>line.includes("Logged in user"))
+  var playerID = loglines.filter(line=>line.includes("Player ID"))
+  var rideOnReceived = loglines.filter(line=>line.includes("Ride on received"));
+  var rideOnSent = loglines.filter(line=>line.includes("Total Ride Ons Given"))
   var logInfo = {
     startTime: startTime[0].split("]")[1].trim(),
     endTime: endTime,
+    username:username[0].split("user:")[1].trim(),
+    playerID:playerID[0].split("Player ID:")[1].trim(),
+    rideOnSent:rideOnSent.length,
+    rideOnReceived:rideOnReceived.length,
     gameVersion: gameVersion[0].split("]")[1].trim(),
     launcherVersion: launcherVersion[0].split("]")[1].trim(),
     GraphicsRenderer: GraphicsRenderer[0].split("]")[1].trim(),
@@ -89,7 +85,7 @@ async function getDevices() {
     ble: [],
     used: [],
   };
-
+ 
   detectedDevices.forEach((element) => {
     element = element.substring(10).trim();
     if (element.includes(["ANT"]) && !devices.ant.includes(element)) {
@@ -149,10 +145,7 @@ async function getAntRxFails() {
   var antRxFailsCh2 = [];
   var antRxFailsCh3 = [];
   var rxFails = [];
-  var rxFailsTemplate = {
-    channel: null,
-    data: []
-  };
+  var rxFailsTemplate = { channel: null, data: [] };
   var auxChannels = [];
 
   antRxFailsLines = loglines.filter((line) =>
@@ -166,10 +159,7 @@ async function getAntRxFails() {
 
     if (auxChannels.includes(eventChannel) == false) {
       auxChannels.push(eventChannel);
-      rxFails.push({
-        channel: eventChannel,
-        data: []
-      });
+      rxFails.push({ channel: eventChannel, data: [] });
     }
 
     var objIndex = rxFails.findIndex(
@@ -189,44 +179,21 @@ async function getAntRxFails() {
 
 async function getNetworkErrors() {
   var loglines = log.split("\r\n");
+  networkErrorLines = loglines.filter((line) =>
+    line.includes("NETWORK:error (6)")
+  );
   var networkErrors = [];
-  loglines.forEach((line) => {
+  networkErrorLines.forEach((line) => {
     var measure_time = line.substring(1, 9);
     var lastItem = networkErrors[networkErrors.length - 1];
-    if (line.includes("NETWORK:error (6)")) {
-      if (networkErrors.length > 0 && lastItem[0] == measure_time) {
-        networkErrors[networkErrors.length - 1][1]++;
-      } else {
-        networkErrors.push([measure_time, 1]);
-      }
+    if (networkErrors.length > 0 && lastItem[0] == measure_time) {
+      networkErrors[networkErrors.length - 1][1]++;
     } else {
-      networkErrors.push([measure_time, 0]);
+      networkErrors.push([measure_time, 1]);
     }
   });
 
   return networkErrors;
-}
-
-async function getAntPairings() {
-
-  var loglines = log.split("\r\n")
-
-  var antDisconnects = [];
-
-  loglines.forEach((line) => {
-    var measure_time = line.substring(1, 9);
-    var lastItem = antDisconnects[antDisconnects.length - 1];
-    if (line.includes("ANT  : Starting ANT search")) {
-      if (antDisconnects.length > 0 && lastItem[0] == measure_time) {
-        antDisconnects[antDisconnects.length - 1][1]++;
-      } else {
-        antDisconnects.push([measure_time, 1]);
-      }
-    } else {
-      antDisconnects.push([measure_time, 0]);
-    }
-  });
-  return antDisconnects;
 }
 
 function plotFPS(data) {
@@ -262,12 +229,14 @@ function plotFPS(data) {
     yAxis: {
       type: "value",
     },
-    series: [{
-      data: fpsVal,
-      type: "line",
-      smooth: true,
-      areaStyle: {},
-    }, ],
+    series: [
+      {
+        data: fpsVal,
+        type: "line",
+        smooth: true,
+        areaStyle: {},
+      },
+    ],
   };
 
   option && fpsChart.setOption(option);
@@ -310,7 +279,8 @@ function plotUDPStats(data) {
     },
     tooltip: {
       trigger: "axis",
-      formatter: "Time: {b0}</br>StC: {c0}</br>Rx Error: {c1}</br>CtS: {c2}</br>Tx Error: {c3}</br>",
+      formatter:
+        "Time: {b0}</br>StC: {c0}</br>Rx Error: {c1}</br>CtS: {c2}</br>Tx Error: {c3}</br>",
     },
     xAxis: {
       type: "category",
@@ -320,7 +290,8 @@ function plotUDPStats(data) {
       //type: 'value'
     },
     dataZoom: [],
-    series: [{
+    series: [
+      {
         name: "StC Rx",
         data: udpStCRx,
         type: "line",
@@ -389,12 +360,14 @@ function plotAntRxFails(data) {
       yAxis: {
         type: "value",
       },
-      series: [{
-        data: errorCount,
-        type: "bar",
-        smooth: true,
-        areaStyle: {},
-      }, ],
+      series: [
+        {
+          data: errorCount,
+          type: "bar",
+          smooth: true,
+          areaStyle: {},
+        },
+      ],
     };
 
     option && errorChart.setOption(option);
@@ -436,66 +409,23 @@ function plotNetworkErrors(data) {
     yAxis: {
       type: "value",
     },
-    series: [{
-      data: errorCount,
-      type: "bar",
-      smooth: true,
-      areaStyle: {},
-    }, ],
+    series: [
+      {
+        data: errorCount,
+        type: "bar",
+        smooth: true,
+        areaStyle: {},
+      },
+    ],
   };
 
   option && netErrorChart.setOption(option);
 }
 
-function plotAntPairings(data) {
-  $("#graphContainer").append(
-    `<div id='antPairings' class='card-body col-md-12 d-flex justify-content-center'></div>`
-  );
-
-  const pairingTime = data.map(function (item) {
-    return item[0];
-  });
-  const pairingCount = data.map(function (item) {
-    return item[1];
-  });
-
-  var pairingChartDom = document.getElementById("antPairings");
-  var pairingChart = echarts.init(pairingChartDom, "dark", {
-    height: 250,
-    width: window.innerWidth * 0.9,
-    position: "absolute",
-  });
-  var option;
-  option = {
-    animation: false,
-    title: {
-      text: "ANT+ Repairings",
-    },
-    tooltip: {
-      trigger: "axis",
-      formatter: "Time: {b0}",
-    },
-    xAxis: {
-      type: "category",
-      data: pairingTime,
-    },
-    yAxis: {
-      type: "value",
-    },
-    series: [{
-      data: pairingCount,
-      type: "bar",
-      smooth: true,
-      areaStyle: {},
-    }, ],
-  };
-
-  option && pairingChart.setOption(option);
-}
-
 function createInfoTable(data) {
   var table = `<table class='table table-bordered table-stripped col-md-12'>
-            <thead class='thead-light'>
+                
+                <thead class='thead-light'>
                 <tr>
                     <th class='col-md-3'>Start</th>
                     <th class='col-md-3'>End</>
@@ -511,6 +441,7 @@ function createInfoTable(data) {
                 <td>${data.launcherVersion}</td>
                 </tr>
                 </tbody>
+
                 <thead class='thead-light'>
                 <tr>
                     <th class='col-md-3'>Graphics Vendor</th>
@@ -525,6 +456,23 @@ function createInfoTable(data) {
                 <td>${data.GraphicsRenderer}</td>
                 <td>${data.deviceCPU}</td>
                 <td>${data.deviceRAM}</td>
+                </tr>
+                </tbody>
+
+                <thead class='thead-light'>
+                <tr>
+                    <th class='col-md-3'>User Name</th>
+                    <th class='col-md-3'>Player ID</>
+                    <th class='col-md-3'>Sent Ride On</th>
+                    <th class='col-md-3'>Received Ride On</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                <td>${data.username}</td>
+                <td>${data.playerID}</td>
+                <td>${data.rideOnSent}</td>
+                <td>${data.rideOnReceived}</td>
                 </tr>
                 </tbody>
             </table>`;
@@ -544,7 +492,7 @@ function getDeviceOnChan(channel) {
   device_id = device_id.substring(0, 4);
   device_string = devices.ant.filter(
     (device) =>
-    device.includes(device_id) && device.indexOf("Non-Selected") == -1
+      device.includes(device_id) && device.indexOf("Non-Selected") == -1
   );
 
   return device_string[0].split(":")[1].split("[ANT]")[0];

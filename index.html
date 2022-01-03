@@ -79,6 +79,11 @@
       <div class="card-body">
         <input type="file" id="logfile" onchange="openFile(event)" />
       </div>
+      <div class="card-body" id='spinner' hidden>
+        <div class="spinner-border text-primary" role="status">
+          <span class="sr-only">Loading...</span>
+        </div>
+      </div>
       <div class="card col-md-12" id="resumen" hidden>
         <div class="card-header">
           <h5><span class="fas fa-info-circle"> Log Info</span></h5>
